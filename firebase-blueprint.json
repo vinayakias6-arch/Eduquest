@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Textbook": {
+      "title": "Textbook",
+      "description": "Textbook details for the marketplace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "stock": { "type": "integer" },
+        "coverUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "integer" },
+        "ownerUid": { "type": "string" }
+      },
+      "required": ["title", "price", "stock", "ownerUid"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User review for a textbook",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "textbookId": { "type": "string" },
+        "userUid": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["textbookId", "userUid", "rating"]
+    },
+    "ExamPaper": {
+      "title": "ExamPaper",
+      "description": "Uploaded previous year questions PDF and generated questions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "examType": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question": { "type": "string" },
+              "options": { "type": "array", "items": { "type": "string" } },
+              "correctAnswer": { "type": "string" },
+              "explanation": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "pdfUrl"]
+    },
+    "ForumPost": {
+      "title": "ForumPost",
+      "description": "Discussion forum post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "replyCount": { "type": "integer" }
+      },
+      "required": ["authorUid", "title", "content"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Record of a textbook sale",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "textbookId": { "type": "string" },
+        "buyerUid": { "type": "string" },
+        "amount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["textbookId", "buyerUid", "amount"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/textbooks/{textbookId}": { "schema": "Textbook", "description": "Textbook inventory" },
+    "/textbooks/{textbookId}/reviews/{reviewId}": { "schema": "Review", "description": "Textbook reviews" },
+    "/examPapers/{paperId}": { "schema": "ExamPaper", "description": "Exam papers and question banks" },
+    "/forumPosts/{postId}": { "schema": "ForumPost", "description": "Forum discussions" },
+    "/sales/{saleId}": { "schema": "Sale", "description": "Sales records" }
+  }
+}

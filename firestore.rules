@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string
+    //   - photoURL: string
+    //   - role: string (required, 'admin' or 'user')
+    //   - createdAt: timestamp
+    //
+    // Collection: textbooks
+    // Document ID: {textbookId}
+    // Fields:
+    //   - title: string (required)
+    //   - author: string
+    //   - description: string
+    //   - price: number (required)
+    //   - stock: number (required)
+    //   - coverUrl: string
+    //   - category: string
+    //   - rating: number
+    //   - reviewCount: number
+    //   - ownerUid: string (required)
+    //
+    // Collection: examPapers
+    // Document ID: {paperId}
+    // Fields:
+    //   - title: string (required)
+    //   - examType: string
+    //   - pdfUrl: string (required)
+    //   - questions: list (required)
+    //   - createdAt: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "vinayakias6@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'user'];
+    }
+
+    function isValidTextbook(data) {
+      return data.keys().hasAll(['title', 'price', 'stock', 'ownerUid']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.price is number && data.price >= 0 &&
+             data.stock is int && data.stock >= 0 &&
+             data.ownerUid is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role));
+    }
+
+    match /textbooks/{textbookId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated() && request.auth.uid == resource.data.userUid;
+      }
+    }
+
+    match /examPapers/{paperId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /forumPosts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.authorUid;
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.authorUid || isAdmin());
+    }
+
+    match /sales/{saleId} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.buyerUid);
+      allow create: if isAuthenticated(); // Usually triggered by a purchase flow
+    }
+  }
+}
